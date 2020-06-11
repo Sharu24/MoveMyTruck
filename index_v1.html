@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="./fontawesome-free-5.13.0-web 3/css/all.css" />
+    <title>MyTruck</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+  </style>
+  <body>
+    <div class="area"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        console.log("loaded");
+      });
+
+      let x, y;
+      x = y = 0;
+
+      let keys = {
+        37: "&#8592;",
+        38: "&#8593;",
+        39: "&#8594;",
+        40: "&#8595;"
+      };
+      let robot = {
+        create: function() {
+          let truck = document.createElement("div");
+          truck.innerHTML = '<i class="fa fa-shuttle-van fa-3x" ></i>';
+          truck.style.position = "absolute";
+          truck.style.marginLeft = "50%";
+          truck.style.marginTop = "50%";
+          console.log(this);
+          truck.style.color = this.signal.stop;
+          return truck;
+        },
+        nav: [37, 38, 39, 40],
+        face: {
+          left: "rotateY(180deg)",
+          top: "rotate(270deg)",
+          right: "rotate(0)",
+          bottom: "rotate(90deg)"
+        },
+        keyArray: [],
+        moveArray: [],
+        step: 40,
+        speed: 500,
+        signal: { move: "green", stop: "red" },
+        pos: {
+          left: function() {
+            return truck.getBoundingClientRect().left;
+          },
+          top: function() {
+            return truck.getBoundingClientRect().top;
+          }
+        }
+      };
+
+      let area = document.querySelector("area");
+      let navKeys = document.querySelectorAll("span");
+
+      let truck = robot.create();
+      document.querySelector("body").appendChild(truck);
+
+      document.addEventListener("keydown", evt => {
+        evt.preventDefault();
+        handleKeyPress(evt);
+      });
+
+      //   Functions
+      function handleKeyPress(evt) {
+        // Driver Navigates
+        console.log("eventKey = ", evt.keyCode);
+        if (robot.nav.includes(evt.keyCode)) {
+          // console.log(`len= ${robot.moveArray.length}`);
+          buildNav(evt.keyCode);
+        }
+        // Driver Halts
+        else if (evt.keyCode === 13) {
+          moveBox();
+        }
+        // random sequence
+        else if (evt.keyCode === 82) {
+          for (var i = 0; i < 6; i++) {
+            let navKey = Object.keys(keys)[Math.floor(Math.random() * 4)];
+            // console.log(Number(navKey));
+            buildNav(Number(navKey));
+          }
+        }
+      }
+
+      function buildNav(keyCode) {
+        // console.log("Here is me ", keyCode);
+        let visualKeys = createVisualKeys(keyCode, robot.moveArray.length);
+        visualKeys.addEventListener("click", handleDelete);
+
+        let tx, ty, face;
+        tx = ty = 0;
+        face = "";
+
+        switch (keyCode) {
+          case 37:
+            tx = -robot.step;
+            face = robot.face.left;
+            break;
+          case 38:
+            ty = -robot.step;
+            face = robot.face.top;
+            break;
+          case 39:
+            tx = robot.step;
+            face = robot.face.right;
+            break;
+          case 40:
+            ty = robot.step;
+            face = robot.face.bottom;
+            break;
+        }
+
+        robot.moveArray.push([keyCode, visualKeys, tx, ty, face]);
+        document.querySelector("body").appendChild(visualKeys);
+      }
+
+      function moveBox() {
+        let navKeys = document.querySelectorAll("span");
+        truck.style.color = robot.signal.move;
+        x = y = 0;
+        // console.log(robot.moveArray);
+        for (let j = 0; j < robot.moveArray.length; j++) {
+          setTimeout(() => {
+            // console.log(robot.moveArray);
+            truck.style.transform = robot.moveArray[j][4];
+            y = robot.pos.top() + robot.moveArray[j][3];
+            x = robot.pos.left() + robot.moveArray[j][2];
+
+            if (y >= 0 && y < window.innerHeight - robot.step * 2) {
+              truck.style.marginTop = `${y}px`;
+            }
+            if (x >= 0 && x < window.innerWidth - robot.step * 2) {
+              if (robot.moveArray[j][3] !== 0) {
+                x -= 6;
+              }
+              truck.style.marginLeft = `${x}px`;
+            }
+            console.log(x, window.innerWidth, y, window.innerHeight);
+
+            // console.log(navKeys[j]);
+            if (navKeys[j + 1]) {
+              animateMe(navKeys[j + 1]);
+            }
+            removeNav(navKeys[j]);
+            if (j === robot.moveArray.length - 1) {
+              truck.style.color = robot.signal.stop;
+              robot.moveArray = [];
+            }
+          }, (j + 1) * robot.speed);
+        }
+      }
+
+      function handleDelete(evt) {
+        // console.log(evt.target.classList[0]);
+        let iodex = robot.moveArray.findIndex(function(key) {
+          return key[1].classList[0] === evt.target.classList[0];
+        });
+        robot.moveArray.splice(iodex, 1);
+
+        removeNav(evt.target);
+      }
+
+      function removeNav(navKey) {
+        navKey.parentNode.removeChild(navKey);
+      }
+
+      function createVisualKeys(keyCode, idx) {
+        let div = document.createElement("span");
+        div.style.display = "inline-block";
+        div.style.postition = "absolute";
+        div.style.color = "red";
+        div.style.fontSize = "1.5rem";
+        div.style.marginTop = "0.8rem";
+        div.style.marginLeft = "0.8rem";
+        div.classList.add(idx);
+        div.innerHTML = keys[keyCode];
+        return div;
+      }
+
+      function animateMe(navKey) {
+        navKey.style.transition = "all 0.1s ease-in";
+        navKey.style.transform = "scale(1.4) rotate(360deg) translateX(4px)";
+        navKey.style.marginRight = "1rem";
+        navKey.style.color = "green";
+      }
+    </script>
+  </body>
+</html>
